@@ -19,7 +19,7 @@ impl EventRecord {
     /// 1. Once an instance of `Self` is created, one should make sure the pointed data does not get modified (or dealloc'ed).
     /// 2. The returned lifetime is arbitray. To restrict the use of the returned reference (and to ensure the first safety guarantee), simply pass it to a sub-function whose signature has no explicit lifetime.
     ///    Thus, the sub-function will not be able to leak this reference.
-    pub(crate) unsafe fn from_ptr<'a>(p: *const EVENT_RECORD) -> Option<&'a Self> {
+    pub unsafe fn from_ptr<'a>(p: *const EVENT_RECORD) -> Option<&'a Self> {
         let s = p as *const Self;
         s.as_ref()
     }
@@ -29,14 +29,14 @@ impl EventRecord {
     /// # Safety
     ///
     /// Obviously, the returned pointer is only valid as long `self` is valid and not modified.
-    pub(crate) fn as_raw_ptr(&self) -> *const EVENT_RECORD {
+    pub fn as_raw_ptr(&self) -> *const EVENT_RECORD {
         &self.0 as *const EVENT_RECORD
     }
 
     /// The `UserContext` field from the wrapped `EVENT_RECORD`
     ///
     /// In this crate, it is always populated to point to a valid [`CallbackData`](crate::trace::CallbackData)
-    pub(crate) fn user_context(&self) -> *const std::ffi::c_void {
+    pub fn user_context(&self) -> *const std::ffi::c_void {
         self.0.UserContext as *const _
     }
 
@@ -107,13 +107,10 @@ impl EventRecord {
 
     pub(crate) fn user_buffer(&self) -> &[u8] {
         unsafe {
-            std::slice::from_raw_parts(
-                self.0.UserData as *mut _,
-                self.0.UserDataLength.into(),
-            )
+            std::slice::from_raw_parts(self.0.UserData as *mut _, self.0.UserDataLength.into())
         }
     }
-    
+
     pub(crate) fn pointer_size(&self) -> usize {
         if self.event_flags() & EVENT_HEADER_FLAG_32_BIT_HEADER != 0 {
             4
@@ -153,7 +150,8 @@ impl EventRecord {
         unsafe {
             std::slice::from_raw_parts(
                 p_ed_array as *const EventHeaderExtendedDataItem,
-                n_extended_data as usize)
+                n_extended_data as usize,
+            )
         }
     }
 }
